@@ -1,0 +1,9 @@
+{
+    "name": "actividad_2_service_api",
+    "version": "1.0.0",
+    "description": "Actividad 2 - un Servicio para la API",
+    "main": "app.js",
+    "scripts": {
+        "start": "node app.js"
+    }
+}
