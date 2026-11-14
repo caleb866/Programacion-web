@@ -1,1 +1,13 @@
+# Dependencias
 node_modules/
+
+# Variables de entorno (contienen la clave de MySQL)
+.env
+
+# Logs
+npm-debug.log*
+*.log
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db

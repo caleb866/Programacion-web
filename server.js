@@ -1,129 +1,136 @@
-const express = require('express');
+import express from "express";
+import { db } from "./db.js";
 
 const app = express();
-const PORT = 3000;
-
 app.use(express.json());
+app.set("json spaces", 2);
 
-// "Base de datos" en memoria
-let productos = [
-  { id: 1, nombre: 'Colonia Aqua', precio: 50000, stock: 10 },
-  { id: 2, nombre: 'Colonia Noir', precio: 65000, stock: 5 },
-  { id: 3, nombre: 'Colonia Citrus', precio: 45000, stock: 8 },
-];
-let siguienteId = 4;
+// ---------- Validaciones ----------
+const nombreValido = (v) => typeof v === "string" && v.trim() !== "";
+const precioValido = (v) => typeof v === "number" && Number.isFinite(v) && v >= 0;
+const stockValido = (v) => Number.isInteger(v) && v >= 0;
 
-// Busca un producto por id (devuelve undefined si no existe)
-function buscarProducto(idTexto) {
-  const id = Number(idTexto);
-  return productos.find((p) => p.id === id);
-}
+const errorServidor = (res, e) => {
+  console.error(e);
+  res.status(500).json({ error: "Error del servidor" });
+};
 
-// Valida los campos que vengan en "datos".
-function validar(datos, completo) {
-  if (completo || datos.nombre !== undefined) {
-    if (typeof datos.nombre !== 'string' || datos.nombre.trim() === '') {
-      return 'El nombre es obligatorio y debe ser texto';
+// ---------- GET /productos ----------
+app.get("/productos", async (req, res) => {
+  try {
+    const [filas] = await db.query("SELECT * FROM productos");
+    res.status(200).json(filas);
+  } catch (e) {
+    errorServidor(res, e);
+  }
+});
+
+// ---------- GET /productos/:id ----------
+app.get("/productos/:id", async (req, res) => {
+  try {
+    const [filas] = await db.query("SELECT * FROM productos WHERE id = ?", [
+      req.params.id,
+    ]);
+    if (filas.length === 0) {
+      return res.status(404).json({ error: "Producto no encontrado" });
     }
+    res.status(200).json(filas[0]);
+  } catch (e) {
+    errorServidor(res, e);
   }
-  if (completo || datos.precio !== undefined) {
-    if (typeof datos.precio !== 'number' || Number.isNaN(datos.precio) || datos.precio < 0) {
-      return 'El precio es obligatorio y debe ser un número mayor o igual a 0';
+});
+
+// ---------- POST /productos ----------
+app.post("/productos", async (req, res) => {
+  try {
+    const { nombre, precio, stock = 0 } = req.body;
+    if (!nombreValido(nombre) || !precioValido(precio) || !stockValido(stock)) {
+      return res.status(400).json({ error: "Datos faltantes o inválidos" });
     }
+    const [resultado] = await db.query(
+      "INSERT INTO productos (nombre, precio, stock) VALUES (?, ?, ?)",
+      [nombre.trim(), precio, stock]
+    );
+    res.status(201).json({ id: resultado.insertId, nombre: nombre.trim(), precio, stock });
+  } catch (e) {
+    errorServidor(res, e);
   }
-  if (datos.stock !== undefined) {
-    if (!Number.isInteger(datos.stock) || datos.stock < 0) {
-      return 'El stock debe ser un entero mayor o igual a 0';
+});
+
+// ---------- PUT /productos/:id (reemplazo completo) ----------
+app.put("/productos/:id", async (req, res) => {
+  try {
+    const { nombre, precio, stock } = req.body;
+    if (!nombreValido(nombre) || !precioValido(precio) || !stockValido(stock)) {
+      return res.status(400).json({ error: "Datos faltantes o inválidos" });
     }
+    const [resultado] = await db.query(
+      "UPDATE productos SET nombre = ?, precio = ?, stock = ? WHERE id = ?",
+      [nombre.trim(), precio, stock, req.params.id]
+    );
+    if (resultado.affectedRows === 0) {
+      return res.status(404).json({ error: "Producto no encontrado" });
+    }
+    res.status(200).json({ id: Number(req.params.id), nombre: nombre.trim(), precio, stock });
+  } catch (e) {
+    errorServidor(res, e);
   }
-  return null; 
-}
-
-// 1. GET /productos -> lista todos (200)
-app.get('/productos', (req, res) => {
-  res.status(200).json(productos);
 });
 
-// 2. GET /productos/:id -> devuelve uno (200 / 404)
-app.get('/productos/:id', (req, res) => {
-  const producto = buscarProducto(req.params.id);
-  if (!producto) {
-    return res.status(404).json({ error: 'Producto no encontrado' });
+// ---------- PATCH /productos/:id (cambio parcial) ----------
+app.patch("/productos/:id", async (req, res) => {
+  try {
+    const { nombre, precio, stock } = req.body;
+    const campos = [];
+    const valores = [];
+
+    if (nombre !== undefined) {
+      if (!nombreValido(nombre)) return res.status(400).json({ error: "Nombre inválido" });
+      campos.push("nombre = ?");
+      valores.push(nombre.trim());
+    }
+    if (precio !== undefined) {
+      if (!precioValido(precio)) return res.status(400).json({ error: "Precio inválido" });
+      campos.push("precio = ?");
+      valores.push(precio);
+    }
+    if (stock !== undefined) {
+      if (!stockValido(stock)) return res.status(400).json({ error: "Stock inválido" });
+      campos.push("stock = ?");
+      valores.push(stock);
+    }
+    if (campos.length === 0) {
+      return res.status(400).json({ error: "No enviaste ningún campo para actualizar" });
+    }
+
+    const [resultado] = await db.query(
+      `UPDATE productos SET ${campos.join(", ")} WHERE id = ?`,
+      [...valores, req.params.id]
+    );
+    if (resultado.affectedRows === 0) {
+      return res.status(404).json({ error: "Producto no encontrado" });
+    }
+
+    const [filas] = await db.query("SELECT * FROM productos WHERE id = ?", [req.params.id]);
+    res.status(200).json(filas[0]);
+  } catch (e) {
+    errorServidor(res, e);
   }
-  res.status(200).json(producto);
 });
 
-// 3. POST /productos -> crea uno nuevo (201 / 400)
-app.post('/productos', (req, res) => {
-  const datos = req.body || {};
-  const error = validar(datos, true);
-  if (error) {
-    return res.status(400).json({ error });
+// ---------- DELETE /productos/:id ----------
+app.delete("/productos/:id", async (req, res) => {
+  try {
+    const [resultado] = await db.query("DELETE FROM productos WHERE id = ?", [
+      req.params.id,
+    ]);
+    if (resultado.affectedRows === 0) {
+      return res.status(404).json({ error: "Producto no encontrado" });
+    }
+    res.status(204).send();
+  } catch (e) {
+    errorServidor(res, e);
   }
-
-  const nuevo = {
-    id: siguienteId++,
-    nombre: datos.nombre.trim(),
-    precio: datos.precio,
-    stock: datos.stock ?? 0,
-  };
-  productos.push(nuevo);
-  res.status(201).json(nuevo);
 });
 
-// 4. PUT /productos/:id -> reemplaza todos los campos (200 / 400 / 404)
-app.put('/productos/:id', (req, res) => {
-  const producto = buscarProducto(req.params.id);
-  if (!producto) {
-    return res.status(404).json({ error: 'Producto no encontrado' });
-  }
-
-  const datos = req.body || {};
-  const error = validar(datos, true);
-  if (error) {
-    return res.status(400).json({ error });
-  }
-
-  producto.nombre = datos.nombre.trim();
-  producto.precio = datos.precio;
-  producto.stock = datos.stock ?? 0;
-  res.status(200).json(producto);
-});
-
-// 5. PATCH /productos/:id -> cambia solo algunos campos (200 / 400 / 404)
-app.patch('/productos/:id', (req, res) => {
-  const producto = buscarProducto(req.params.id);
-  if (!producto) {
-    return res.status(404).json({ error: 'Producto no encontrado' });
-  }
-
-  const datos = req.body || {};
-  if (Object.keys(datos).length === 0) {
-    return res.status(400).json({ error: 'Debes enviar al menos un campo' });
-  }
-  const error = validar(datos, false);
-  if (error) {
-    return res.status(400).json({ error });
-  }
-
-  if (datos.nombre !== undefined) producto.nombre = datos.nombre.trim();
-  if (datos.precio !== undefined) producto.precio = datos.precio;
-  if (datos.stock !== undefined) producto.stock = datos.stock;
-  res.status(200).json(producto);
-});
-
-// 6. DELETE /productos/:id -> borra el producto (204 / 404)
-app.delete('/productos/:id', (req, res) => {
-  const producto = buscarProducto(req.params.id);
-  if (!producto) {
-    return res.status(404).json({ error: 'Producto no encontrado' });
-  }
-
-  productos = productos.filter((p) => p.id !== producto.id);
-  res.status(204).send(); // éxito sin body
-});
-
-// Arrancar servidor
-app.listen(PORT, () => {
-  console.log(`API de productos corriendo en http://localhost:${PORT}`);
-});
+app.listen(3000, () => console.log("API en http://localhost:3000"));
