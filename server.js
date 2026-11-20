@@ -1,9 +1,11 @@
 import express from "express";
 import { db } from "./db.js";
+import authRouter, { verificarToken } from "./auth.js";
 
 const app = express();
 app.use(express.json());
 app.set("json spaces", 2);
+app.use(authRouter);
 
 // ---------- Validaciones ----------
 const nombreValido = (v) => typeof v === "string" && v.trim() !== "";
@@ -41,7 +43,10 @@ app.get("/productos/:id", async (req, res) => {
 });
 
 // ---------- POST /productos ----------
-app.post("/productos", async (req, res) => {
+app.post(
+  "/productos",
+  verificarToken,
+  async (req, res) => {
   try {
     const { nombre, precio, stock = 0 } = req.body;
     if (!nombreValido(nombre) || !precioValido(precio) || !stockValido(stock)) {
@@ -58,7 +63,7 @@ app.post("/productos", async (req, res) => {
 });
 
 // ---------- PUT /productos/:id (reemplazo completo) ----------
-app.put("/productos/:id", async (req, res) => {
+app.put("/productos/:id", verificarToken,async (req, res) => {
   try {
     const { nombre, precio, stock } = req.body;
     if (!nombreValido(nombre) || !precioValido(precio) || !stockValido(stock)) {
@@ -78,7 +83,7 @@ app.put("/productos/:id", async (req, res) => {
 });
 
 // ---------- PATCH /productos/:id (cambio parcial) ----------
-app.patch("/productos/:id", async (req, res) => {
+app.patch("/productos/:id",verificarToken, async (req, res) => {
   try {
     const { nombre, precio, stock } = req.body;
     const campos = [];
@@ -119,7 +124,7 @@ app.patch("/productos/:id", async (req, res) => {
 });
 
 // ---------- DELETE /productos/:id ----------
-app.delete("/productos/:id", async (req, res) => {
+app.delete("/productos/:id",verificarToken, async (req, res) => {
   try {
     const [resultado] = await db.query("DELETE FROM productos WHERE id = ?", [
       req.params.id,
