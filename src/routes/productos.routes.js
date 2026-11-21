@@ -1,69 +1,19 @@
-import express from "express";
-import { db } from "./db.js";
-import authRouter, { verificarToken, soloAdmin } from "./auth.js";
+import { Router } from "express";
+import { db } from "../db.js";
+import { verificarToken, soloAdmin } from "../middlewares/auth.middleware.js";
+import {
+  parsearId,
+  formatearProducto,
+  validarProducto,
+  responder400,
+  asyncHandler,
+} from "../validaciones.js";
 
-const app = express();
-app.set("json spaces", 2);
-app.use(express.json());
+const router = Router();
 
-// ---------- Utilidades ----------
-
-function parsearId(valor) {
-  const id = Number(valor);
-  return Number.isInteger(id) && id > 0 ? id : null;
-}
-
-// MySQL devuelve DECIMAL como texto; lo convertimos a número para la API.
-function formatearProducto(fila) {
-  return { ...fila, precio: Number(fila.precio) };
-}
-
-// Valida nombre, precio y stock. Con `parcial = true` (PATCH) solo valida los campos enviados.
-function validarProducto(body, parcial = false) {
-  const errores = [];
-
-  if (!parcial || body.nombre !== undefined) {
-    if (typeof body.nombre !== "string" || body.nombre.trim() === "") {
-      errores.push("El nombre es obligatorio y no puede estar vacío");
-    }
-  }
-
-  if (!parcial || body.precio !== undefined) {
-    if (
-      typeof body.precio !== "number" ||
-      !Number.isFinite(body.precio) ||
-      body.precio < 0
-    ) {
-      errores.push("El precio es obligatorio y debe ser un número mayor o igual a 0");
-    }
-  }
-
-  if (body.stock !== undefined) {
-    if (!Number.isInteger(body.stock) || body.stock < 0) {
-      errores.push("El stock debe ser un entero mayor o igual a 0");
-    }
-  }
-
-  return errores;
-}
-
-function responder400(res, errores) {
-  return res.status(400).json({ error: "Datos inválidos", detalles: errores });
-}
-
-// Envuelve handlers async para que Express reciba los errores con next().
-function asyncHandler(handler) {
-  return (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
-}
-
-// ---------- Autenticación ----------
-
-app.use(authRouter);
-
-// ---------- GET /productos ----------
-
-app.get(
-  "/productos",
+// GET /productos
+router.get(
+  "/",
   asyncHandler(async (req, res) => {
     const [filas] = await db.execute(
       "SELECT id, nombre, precio, stock FROM productos ORDER BY id"
@@ -73,10 +23,9 @@ app.get(
   })
 );
 
-// ---------- GET /productos/:id ----------
-
-app.get(
-  "/productos/:id",
+// GET /productos/:id
+router.get(
+  "/:id",
   asyncHandler(async (req, res) => {
     const id = parsearId(req.params.id);
 
@@ -97,10 +46,9 @@ app.get(
   })
 );
 
-// ---------- POST /productos ----------
-
-app.post(
-  "/productos",
+// POST /productos
+router.post(
+  "/",
   verificarToken,
   asyncHandler(async (req, res) => {
     const body = req.body ?? {};
@@ -123,10 +71,9 @@ app.post(
   })
 );
 
-// ---------- PUT /productos/:id ----------
-
-app.put(
-  "/productos/:id",
+// PUT /productos/:id
+router.put(
+  "/:id",
   verificarToken,
   asyncHandler(async (req, res) => {
     const id = parsearId(req.params.id);
@@ -165,10 +112,9 @@ app.put(
   })
 );
 
-// ---------- PATCH /productos/:id ----------
-
-app.patch(
-  "/productos/:id",
+// PATCH /productos/:id
+router.patch(
+  "/:id",
   verificarToken,
   asyncHandler(async (req, res) => {
     const id = parsearId(req.params.id);
@@ -219,9 +165,6 @@ app.patch(
 
     valores.push(id);
 
-    console.log(`UPDATE productos SET ${campos.join(", ")} WHERE id = ?`);
-    console.log("Valores:", valores);
-    
     await db.execute(
       `UPDATE productos SET ${campos.join(", ")} WHERE id = ?`,
       valores
@@ -236,10 +179,9 @@ app.patch(
   })
 );
 
-// ---------- DELETE /productos/:id ----------
-
-app.delete(
-  "/productos/:id",
+// DELETE /productos/:id
+router.delete(
+  "/:id",
   verificarToken,
   soloAdmin,
   asyncHandler(async (req, res) => {
@@ -262,37 +204,4 @@ app.delete(
   })
 );
 
-// ---------- Rutas y errores ----------
-
-app.use((req, res) => {
-  res.status(404).json({ error: "Ruta no encontrada" });
-});
-
-app.use((err, req, res, next) => {
-  if (err.type === "entity.parse.failed") {
-    return res.status(400).json({ error: "JSON inválido" });
-  }
-
-  if (err.code === "ECONNREFUSED") {
-    return res.status(503).json({
-      error: "No se pudo conectar a MySQL. Verifica que el servidor esté encendido.",
-    });
-  }
-
-  if (err.code === "ER_ACCESS_DENIED_ERROR") {
-    return res.status(500).json({
-      error: "Usuario o contraseña de MySQL incorrectos. Revisa el archivo .env",
-    });
-  }
-
-  console.error(err);
-  res.status(500).json({ error: "Error interno del servidor" });
-});
-
-// ---------- Servidor ----------
-
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log(`Servidor escuchando en http://localhost:${PORT}`);
-});
+export default router;

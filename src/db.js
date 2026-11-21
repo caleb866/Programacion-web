@@ -5,5 +5,4 @@ export const db = mysql.createPool({
   user: "root",
   password: process.env.DB_PASSWORD,
   database: "tienda",
-  decimalNumbers: true, // devuelve precio como número y no como texto
 });

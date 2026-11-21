@@ -1,7 +1,7 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { db } from "./db.js";
+import { db } from "../db.js";
 
 const router = Router();
 
@@ -68,8 +68,5 @@ router.post("/login", async (req, res) => {
     res.status(500).json({ error: "Error del servidor" });
   }
 });
-
-// Re-exporta los middlewares para que también se puedan importar desde auth.js
-export { verificarToken, soloAdmin, requiereRol } from "./middleware.js";
 
 export default router;

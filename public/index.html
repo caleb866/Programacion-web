@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tienda "La Ñata"</title>
+    <link rel="stylesheet" href="./estilos.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="marca">
+          <div class="marca-logo" aria-hidden="true">Ñ</div>
+          <div>
+            <p class="marca-kicker">Tienda</p>
+            <h1 class="marca-nombre">Laura</h1>
+          </div>
+        </div>
+
+        <div class="sesion">
+          <span id="sesion-info" class="sesion-texto">Sin sesión</span>
+          <button
+            id="btn-salir"
+            class="boton boton-secundario boton-pequeno oculto"
+            type="button"
+          >
+            Salir
+          </button>
+        </div>
+
+        <section id="panel-login" class="panel-login">
+          <div class="panel-login-cabecera">
+            <p class="eyebrow">Acceso</p>
+            <h2>Iniciar sesión</h2>
+            <p class="login-texto">
+              Ingresa con tu cuenta para administrar el catálogo.
+            </p>
+          </div>
+
+          <form id="form-login" class="formulario formulario-login">
+            <label>
+              Email
+              <input
+                id="login-email"
+                type="email"
+                autocomplete="username"
+                placeholder="tu@email.com"
+                required
+              />
+            </label>
+
+            <label>
+              Contraseña
+              <input
+                id="login-password"
+                type="password"
+                autocomplete="current-password"
+                placeholder="••••••••"
+                required
+              />
+            </label>
+
+            <button class="boton boton-ancho" type="submit">Entrar</button>
+          </form>
+
+          <p id="login-mensaje" class="mensaje" role="status"></p>
+        </section>
+
+        <div class="sidebar-pie">
+          <p class="pie-marca">Tienda Laura</p>
+          <p>API de productos con JWT · Actividad 6</p>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Panel de administración</p>
+            <h2>Productos</h2>
+            <p class="topbar-texto">
+              Gestiona el catálogo de Tienda Laura.
+            </p>
+          </div>
+
+          <div class="topbar-acciones">
+            <span class="chip">JWT</span>
+            <button
+              id="btn-recargar"
+              class="boton boton-secundario"
+              type="button"
+            >
+              Recargar
+            </button>
+          </div>
+        </header>
+
+        <section class="card tabla-card">
+          <div class="card-cabecera">
+            <div>
+              <h3>Catálogo</h3>
+              <p>Consulta, edita o elimina los productos registrados.</p>
+            </div>
+            <span class="chip chip-suave">API /productos</span>
+          </div>
+
+          <div class="tabla-contenedor">
+            <table class="tabla">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nombre</th>
+                  <th class="numero">Precio</th>
+                  <th class="numero">Stock</th>
+                  <th class="col-acciones">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="cuerpo-productos">
+                <tr>
+                  <td colspan="5" class="vacio">Cargando productos...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="acciones-tabla">
+            <button id="btn-agregar" class="boton" type="button">
+              Agregar producto
+            </button>
+            <p id="tabla-mensaje" class="mensaje" role="status"></p>
+          </div>
+        </section>
+
+        <section id="panel-formulario" class="card formulario-card oculto">
+          <div class="card-cabecera">
+            <div>
+              <h3 id="titulo-formulario">Agregar producto</h3>
+              <p>
+                Completa los datos. Para editar, usa el botón Editar de la tabla.
+              </p>
+            </div>
+          </div>
+
+          <form id="form-producto" class="formulario formulario-producto">
+            <label>
+              Nombre
+              <input
+                id="producto-nombre"
+                type="text"
+                placeholder="Nombre del producto"
+                required
+              />
+            </label>
+
+            <label>
+              Precio
+              <input
+                id="producto-precio"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                required
+              />
+            </label>
+
+            <label>
+              Stock
+              <input
+                id="producto-stock"
+                type="number"
+                min="0"
+                step="1"
+                value="0"
+                required
+              />
+            </label>
+
+            <div class="acciones-formulario">
+              <button id="btn-guardar" class="boton" type="submit">
+                Guardar producto
+              </button>
+              <button id="btn-cancelar" class="boton boton-texto" type="button">
+                Cancelar
+              </button>
+            </div>
+          </form>
+
+          <p id="producto-mensaje" class="mensaje" role="status"></p>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

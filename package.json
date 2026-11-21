@@ -1,15 +1,19 @@
 {
-  "name": "actividad-4-api-mysql",
+  "name": "actividad_6_api_web",
   "version": "1.0.0",
-  "type": "module",
+  "description": "Actividad 6 - API de productos con JWT y front-end",
+  "main": "src/server.js",
   "scripts": {
-    "start": "node --env-file=.env server.js",
-    "dev": "node --env-file=.env --watch server.js"
+    "start": "node --env-file=.env src/server.js",
+    "dev": "node --env-file=.env --watch src/server.js"
   },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
   "dependencies": {
     "bcryptjs": "^3.0.3",
-    "dotenv": "^18.0.10",
-    "express": "^4.21.0",
+    "express": "^5.3.0",
     "jsonwebtoken": "^9.0.3",
     "mysql2": "^3.24.6"
   }
