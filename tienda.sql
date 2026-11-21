@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS productos (
 INSERT INTO productos (nombre, precio, stock)
 VALUES ('Teclado', 80000, 10), ('Mouse', 35000, 25), ('Monitor', 150000, 5), ('Auriculares', 60000, 15);
 
+
 CREATE TABLE usuarios (
   id INT AUTO_INCREMENT PRIMARY KEY,
   email VARCHAR(100) NOT NULL UNIQUE,

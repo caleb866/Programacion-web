@@ -5,8 +5,8 @@ import { db } from "./db.js";
 
 const router = Router();
 
-// POST /register  -> crea usuario guardando el HASH, nunca la clave
-router.post("/register", async (req, res) => {
+// POST /registro  -> crea usuario guardando el HASH, nunca la clave
+async function registrar(req, res) {
   try {
     const { email, password, rol } = req.body ?? {};
 
@@ -28,7 +28,11 @@ router.post("/register", async (req, res) => {
     console.error(err);
     res.status(500).json({ error: "Error del servidor" });
   }
-});
+}
+
+// /registro es la ruta que pide la actividad; /register queda como alias.
+router.post("/registro", registrar);
+router.post("/register", registrar);
 
 // POST /login  -> entrega el token
 router.post("/login", async (req, res) => {
@@ -65,31 +69,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// Middleware: exige token válido  -> 401 si falta o está vencido
-export function verificarToken(req, res, next) {
-  const header = req.headers.authorization || "";
-  const [tipo, token] = header.split(" ");
-
-  if (tipo !== "Bearer" || !token) {
-    return res.status(401).json({ error: "Token requerido" });
-  }
-
-  try {
-    req.usuario = jwt.verify(token, process.env.JWT_SECRET); // { id, rol, iat, exp }
-    next();
-  } catch {
-    return res.status(401).json({ error: "Token inválido o vencido" });
-  }
-}
-
-// Middleware opcional: exige un rol  -> 403 si tiene token pero sin permiso
-export function requiereRol(...roles) {
-  return (req, res, next) => {
-    if (!roles.includes(req.usuario.rol)) {
-      return res.status(403).json({ error: "No tienes permiso" });
-    }
-    next();
-  };
-}
+// Re-exporta los middlewares para que también se puedan importar desde auth.js
+export { verificarToken, soloAdmin, requiereRol } from "./middleware.js";
 
 export default router;
